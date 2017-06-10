@@ -6,8 +6,14 @@
 # source: https://github.com/haasn/gentoo-conf/blob/nanodesu/home/nand/.mpv/filters/mvtools.vpy
 
 import vapoursynth
+import math
 
 core = vapoursynth.get_core()
+
+# Must use the following line when compiled with Homebrew:
+core.std.LoadPlugin(path="/usr/local/lib/libmvtools.dylib")
+core.std.LoadPlugin(path="/usr/local/lib/libffms2.dylib")
+
 # ref: http://avisynth.org.ru/mvtools/mvtools2.html#functions
 # default is 400, less means interpolation will only happen when it will work well
 ignore_threshold=140

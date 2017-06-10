@@ -1,6 +1,8 @@
 import vapoursynth as vs
 core = vs.get_core()
 
+# Must use the following line when compiled with Homebrew:
+core.std.LoadPlugin(path="/usr/local/lib/libmvtools.dylib")
 
 # skip motion interpolation completely for content exceeding the limits below
 max_width  = 1920
@@ -21,25 +23,43 @@ th_flow_changed  = 14
 # size of blocks the analyse step is performed on
 blocksize = 2**4
 # motion estimation accuracy, precision to 1/acc pixel
-acc = 1
+acc = 2
 # search algorithm and argument
 search_alg = 3
 search_arg = 2
 # processing mask mode (FlowFPS)
 msk = 1
 
+if "video_in" in globals():
+    # realtime
+    clip = video_in
 
+else:
+    # run with vspipe
+    core.std.LoadPlugin(path="/usr/local/lib/libffms2.dylib")
+    clip = core.ffms2.Source(source=in_filename)
+    dst_fps=float(display_fps)
+    max_flow_width  = 1920
+    max_flow_height = 1200
+
+
+# Seems to choke when you pass it more than six decimals.
+container_fps = round(float(container_fps), 6)
 
 # assume display_fps to be bogus when not in a certain range
-target_num = 60 if display_fps < 23.9 or display_fps > 300 else display_fps
-while (target_num > max_fps):
-    target_num /= 2
-target_num = int(target_num * 1e6)
-target_den = int(1e6)
+#target_num = 60 if display_fps < 23.9 or display_fps > 300 else display_fps
+#while (target_num > max_fps):
+#    target_num /= 2
+#target_num = int(target_num * 1e6)
+#target_den = int(1e6)
 source_num = int(container_fps * 1e6)
 source_den = int(1e6)
 
-clip = video_in
+target_num = int(source_num * 2)
+target_den = int(1e6)
+#target_num = 60 if display_fps < 23.9 or display_fps > 300 else display_fps
+#while (target_num > max_fps):
+#    target_num /= 2
 
 if not (clip.width > max_width or clip.height > max_height or container_fps > max_fps):
     clip = core.std.AssumeFPS(clip, fpsnum=source_num, fpsden=source_den)
