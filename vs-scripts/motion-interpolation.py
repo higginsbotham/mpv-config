@@ -23,7 +23,7 @@ th_flow_changed  = 14
 # size of blocks the analyse step is performed on
 blocksize = 2**4
 # motion estimation accuracy, precision to 1/acc pixel
-acc = 2
+acc = 1
 # search algorithm and argument
 search_alg = 3
 search_arg = 2
@@ -41,6 +41,7 @@ else:
     dst_fps=float(display_fps)
     max_flow_width  = 1920
     max_flow_height = 1200
+    search_arg = 4
 
 
 # Seems to choke when you pass it more than six decimals.
@@ -64,8 +65,12 @@ target_den = int(1e6)
 if not (clip.width > max_width or clip.height > max_height or container_fps > max_fps):
     clip = core.std.AssumeFPS(clip, fpsnum=source_num, fpsden=source_den)
     sup  = core.mv.Super(clip, pel=acc, hpad=blocksize, vpad=blocksize)
-    bv   = core.mv.Analyse(sup, blksize=blocksize, isb=True , chroma=True, search=search_alg, searchparam=search_arg)
-    fv   = core.mv.Analyse(sup, blksize=blocksize, isb=False, chroma=True, search=search_alg, searchparam=search_arg)
+    if "video_in" in globals():
+        bv   = core.mv.Analyse(sup, blksize=blocksize, isb=True , chroma=True, search=search_alg, searchparam=search_arg)
+        fv   = core.mv.Analyse(sup, blksize=blocksize, isb=False, chroma=True, search=search_alg, searchparam=search_arg)
+    else:
+        bv   = core.mv.Analyse(sup, blksize=blocksize, isb=True , chroma=True, search=search_alg, searchparam=search_arg, truemotion=True)
+        fv   = core.mv.Analyse(sup, blksize=blocksize, isb=False, chroma=True, search=search_alg, searchparam=search_arg, truemotion=True)
 
     use_block = clip.width > max_flow_width or clip.height > max_flow_height
     if use_block:
