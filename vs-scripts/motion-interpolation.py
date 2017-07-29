@@ -1,8 +1,9 @@
 import vapoursynth as vs
 core = vs.get_core()
-
-# Must use the following line when compiled with Homebrew:
-core.std.LoadPlugin(path="/usr/local/lib/libmvtools.dylib")
+try:
+    core.std.LoadPlugin(path="/usr/local/lib/libmvtools.dylib")
+except:
+    print('Error loading MVTools. Already loaded?')
 
 # skip motion interpolation completely for content exceeding the limits below
 max_width  = 1920
@@ -17,18 +18,18 @@ max_flow_height = 720
 th_block_diff = 8*8*7
 th_flow_diff  = 8*8*7
 # (threshold/255)% blocks have to change to consider this a scene change
-# (= no motion compensation), default 130
-th_block_changed = 14
-th_flow_changed  = 14
+# (= no motion compensation), default 130, old values 14
+th_block_changed = 12
+th_flow_changed  = 12
 # size of blocks the analyse step is performed on
 blocksize = 2**4
 # motion estimation accuracy, precision to 1/acc pixel
 acc = 1
-# search algorithm and argument
+# search algorithm and argument, old values 3 and 2
 search_alg = 3
 search_arg = 2
-# processing mask mode (FlowFPS)
-msk = 1
+# processing mask mode (FlowFPS), old value is 1
+msk = 2
 
 if "video_in" in globals():
     # realtime
@@ -36,31 +37,27 @@ if "video_in" in globals():
 
 else:
     # run with vspipe
-    core.std.LoadPlugin(path="/usr/local/lib/libffms2.dylib")
+    try:
+        core.std.LoadPlugin(path="/usr/local/lib/libffms2.dylib")
+    except:
+        print('Error loading libffms2. Already loaded?')
     clip = core.ffms2.Source(source=in_filename)
     dst_fps=float(display_fps)
     max_flow_width  = 1920
     max_flow_height = 1200
-    search_arg = 4
-
+    search_arg = 8
+    acc = 2
 
 # Seems to choke when you pass it more than six decimals.
 container_fps = round(float(container_fps), 6)
 
-# assume display_fps to be bogus when not in a certain range
-#target_num = 60 if display_fps < 23.9 or display_fps > 300 else display_fps
-#while (target_num > max_fps):
-#    target_num /= 2
-#target_num = int(target_num * 1e6)
-#target_den = int(1e6)
 source_num = int(container_fps * 1e6)
 source_den = int(1e6)
 
 target_num = int(source_num * 2)
 target_den = int(1e6)
-#target_num = 60 if display_fps < 23.9 or display_fps > 300 else display_fps
-#while (target_num > max_fps):
-#    target_num /= 2
+while (target_num > max_fps):
+    target_num /= 2
 
 if not (clip.width > max_width or clip.height > max_height or container_fps > max_fps):
     clip = core.std.AssumeFPS(clip, fpsnum=source_num, fpsden=source_den)
@@ -69,8 +66,8 @@ if not (clip.width > max_width or clip.height > max_height or container_fps > ma
         bv   = core.mv.Analyse(sup, blksize=blocksize, isb=True , chroma=True, search=search_alg, searchparam=search_arg)
         fv   = core.mv.Analyse(sup, blksize=blocksize, isb=False, chroma=True, search=search_alg, searchparam=search_arg)
     else:
-        bv   = core.mv.Analyse(sup, blksize=blocksize, isb=True , chroma=True, search=search_alg, searchparam=search_arg, truemotion=True)
-        fv   = core.mv.Analyse(sup, blksize=blocksize, isb=False, chroma=True, search=search_alg, searchparam=search_arg, truemotion=True)
+        bv   = core.mv.Analyse(sup, truemotion=True, blksize=blocksize, isb=True , chroma=True, search=search_alg, searchparam=search_arg)
+        fv   = core.mv.Analyse(sup, truemotion=True, blksize=blocksize, isb=False, chroma=True, search=search_alg, searchparam=search_arg)
 
     use_block = clip.width > max_flow_width or clip.height > max_flow_height
     if use_block:
